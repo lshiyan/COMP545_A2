@@ -376,18 +376,24 @@ def cbow_preprocessing(indices_list: "list[list[int]]", window_size: int = 2):
     
     for index_list in indices_list:
         ix_surroundings, ix_current = build_current_surrounding_pairs(index_list, window_size)
+        
+        sources.extend(ix_surroundings)
+        targets.extend(ix_current)
+    
+    return sources, targets
+        
+
+def skipgram_preprocessing(indices_list: "list[list[int]]", window_size: int = 2):
+    sources, targets = [], []
+    
+    for index_list in indices_list:
+        ix_surroundings, ix_current = build_current_surrounding_pairs(index_list, window_size)
         ix_surroundings_expanded, ix_current_expanded = expand_surrounding_words(ix_surroundings, ix_current)
        
         sources.extend(ix_surroundings_expanded)
         targets.extend(ix_current_expanded)
     
     return sources, targets
-        
-
-def skipgram_preprocessing(indices_list: "list[list[int]]", window_size: int = 2):
-    # TODO: your work here
-    pass
-
 
 class SharedNNLM:
     def __init__(self, num_words: int, embed_dim: int):
@@ -405,8 +411,8 @@ class SharedNNLM:
         """
 
         # TODO vvvvvv
-        self.embedding = "your work here"
-        self.projection = "your work here"
+        self.embedding = nn.Linear(num_words, embed_dim)
+        self.projection = nn.Linear(embed_dim, num_words, bias=False)
 
         # TODO ^^^^^
         self.bind_weights()
@@ -450,9 +456,12 @@ class SkipGram(nn.Module):
         self.proj = self.nnlm.get_proj()
 
     def forward(self, x: torch.Tensor):
-        # TODO: your work here
-        pass
-
+        
+        embedding = self.emb(x)
+        projection = self.proj(embedding)
+        softmax_projection = torch.softmax(projection, dim = 1)
+        
+        return softmax_projection
 
 class CBOW(nn.Module):
     """
@@ -476,16 +485,24 @@ class CBOW(nn.Module):
         self.proj = self.nnlm.get_proj()
 
     def forward(self, x: torch.Tensor):
-        # TODO: your work here
-        pass
+        
+        embedding = self.emb(x)
+        averaged_embedding = torch.mean(embedding, dim=1)
+        projection = self.proj(averaged_embedding)
+        softmax_projection = torch.softmax(projection, dim = 1)
+        
+        return softmax_projection
 
 
 def compute_topk_similar(
-    word_emb: torch.Tensor, w2v_emb_weight: torch.Tensor, k
+    word_emb: torch.Tensor, w2v_emb_weight: torch.Tensor, k: int 
 ) -> list:
-    # TODO: your work here
-    pass
-
+    
+    cosine_similarity = torch.nn.CosineSimilarity(dim = 1)
+    similarities = cosine_similarity(word_emb, w2v_emb_weight)
+    top_k = torch.topk(similarities, k)
+    
+    return top_k.indices.tolist()
 
 @torch.no_grad()
 def retrieve_similar_words(
@@ -495,9 +512,14 @@ def retrieve_similar_words(
     index_to_word: "dict[int, str]",
     k: int = 5,
 ) -> "list[str]":
-    # TODO: your work here
-    pass
-
+    
+    model.eval()
+    word_index = index_map[word]
+    tensor_index = torch.tensor([word_index])
+    embedding = model(tensor_index)
+    topk = compute_topk_similar(embedding.unsqueeze(0), model.emb.weight, k)
+    
+    return [index_to_word[ix] for ix in topk]
 
 @torch.no_grad()
 def word_analogy(
@@ -509,8 +531,18 @@ def word_analogy(
     index_to_word: "dict[int, str]",
     k: int = 5,
 ) -> "list[str]":
-    # TODO: your work here
-    pass
+    
+    model.eval()
+    word_a_index = index_map[word_a]
+    word_b_index = index_map[word_b]
+    word_c_index = index_map[word_c]
+    
+    tensor_indices = torch.tensor([word_a_index, word_b_index, word_c_index])
+    embeddings = model(tensor_indices)
+    analogy_embedding = embeddings[1] - embeddings[0] + embeddings[2]
+    topk = compute_topk_similar(analogy_embedding.unsqueeze(0), model.emb.weight, k)
+    
+    return [index_to_word[ix] for ix in topk]
 
 
 # ######################## PART 2: YOUR WORK STARTS HERE ########################
