@@ -5,6 +5,7 @@ import random
 from typing import Union, Callable
 
 import numpy as np
+import heapq
 from sklearn.decomposition import PCA
 import torch
 import torch.nn as nn
@@ -411,7 +412,7 @@ class SharedNNLM:
         """
 
         # TODO vvvvvv
-        self.embedding = nn.Linear(num_words, embed_dim)
+        self.embedding = nn.Embedding(num_words, embed_dim)
         self.projection = nn.Linear(embed_dim, num_words, bias=False)
 
         # TODO ^^^^^
@@ -499,7 +500,7 @@ def compute_topk_similar(
 ) -> list:
     
     cosine_similarity = torch.nn.CosineSimilarity(dim = 1)
-    similarities = cosine_similarity(word_emb, w2v_emb_weight)
+    similarities = cosine_similarity(word_emb.squeeze(0), w2v_emb_weight)
     top_k = torch.topk(similarities, k)
     
     return top_k.indices.tolist()
@@ -553,21 +554,50 @@ def compute_gender_subspace(
     gender_attribute_words: "list[tuple[str, str]]",
     n_components: int = 1,
 ) -> np.array:
-    # TODO: your work here
-    pass
+    
+    pca = PCA(n_components)
+    
+    normalized_embeddings = []
+    
+    for w1, w2 in gender_attribute_words:
+        emb1 = word_to_embedding[w1]
+        emb2 = word_to_embedding[w2]
+        
+        mean = np.add(emb1, emb2) / 2
+        
+        normalized_emb1 = np.subtract(emb1, mean)
+        normalized_emb2 = np.subtract(emb2, mean)
+    
+        normalized_embeddings.append(normalized_emb1)
+        normalized_embeddings.append(normalized_emb2)
+        
+    pca.fit(normalized_embeddings)
+    return pca.components_
 
 
 def project(a: np.array, b: np.array) -> "tuple[float, np.array]":
-    # TODO: your work here
-    pass
+    numerator = np.dot(a, b)
+    denominator = np.dot(b, b)
+    
+    scalar = numerator/denominator
+    projected_vector = scalar * b
+    
+    return scalar, projected_vector
 
 
 def compute_profession_embeddings(
     word_to_embedding: "dict[str, np.array]", professions: "list[str]"
 ) -> "dict[str, np.array]":
-    # TODO: your work here
-    pass
-
+    
+    profession_to_embedding = {}
+    
+    for profession in professions:
+        split_profession = profession.split(" ")
+        embedded_split_profession = np.array([word_to_embedding[w] for w in split_profession])
+        mean_embedding = embedded_split_profession.mean(axis = 1)
+        profession_to_embedding[profession] = mean_embedding
+    
+    return profession_to_embedding
 
 def compute_extreme_words(
     words: "list[str]",
@@ -576,13 +606,33 @@ def compute_extreme_words(
     k: int = 10,
     max_: bool = True,
 ) -> "list[str]":
-    # TODO: your work here
-    pass
-
+    
+    heap = []
+    word_embeddings = [word_to_embedding[words[i]] for i in range(len(words))]
+    
+    for i, word_embedding in word_embeddings:
+        scalar, _ = project(word_embedding, gender_subspace[0])
+        
+        heapq.heappush(heap, (scalar, words[i]))
+    
+    k_extreme = None
+    
+    if max_:
+        k_extreme = heapq.nlargest(10, heap)
+    else:
+        k_extreme = heapq.nsmallest(10, heap)
+    
+    return [ele[1] for ele in k_extreme]
+        
+        
 
 def cosine_similarity(a: np.array, b: np.array) -> float:
-    # TODO: your work here
-    pass
+    numerator = np.dot(a, b)
+    
+    a_norm = np.linalg.norm(a)
+    b_norm = np.linalg.norm(b)
+    
+    return numerator/ (a_norm * b_norm)
 
 
 def compute_direct_bias(
@@ -591,16 +641,22 @@ def compute_direct_bias(
     gender_subspace: np.array,
     c: float = 0.25,
 ):
-    # TODO: your work here
-    pass
-
+    word_embeddings = [word_to_embedding[words[i]] for i in range(len(words))]
+    abs_cosine_similarities = [abs(cosine_similarity(word_embeddings[i], gender_subspace[0]))**c for i in range(len(word_embeddings))]
+    
+    return sum(abs_cosine_similarities)/len(abs_cosine_similarities)
 
 def weat_association(
     w: str, A: "list[str]", B: "list[str]", word_to_embedding: "dict[str, np.array]"
 ) -> float:
-    # TODO: your work here
-    pass
+    
+    a_similarities = [cosine_similarity(word_to_embedding[w], word_to_embedding[A[i]]) for i in range(len(A))]
+    b_similarities = [cosine_similarity(word_to_embedding[w], word_to_embedding[A[i]]) for i in range(len(B))]
 
+    a_mean = sum(a_similarities) / len(a_similarities)
+    b_mean = sum(b_similarities) / len(b_similarities)
+    
+    return a_mean - b_mean
 
 def weat_differential_association(
     X: "list[str]",
@@ -610,15 +666,22 @@ def weat_differential_association(
     word_to_embedding: "dict[str, np.array]",
     weat_association_func: Callable,
 ) -> float:
-    # TODO: your work here
-    pass
+    
+    x_similarities = [weat_association_func(X[i], A, B, word_to_embedding) for i in range(len(X))]
+    y_similarities = [weat_association_func(Y[i], A, B, word_to_embedding) for i in range(len(Y))]
 
+    return sum(x_similarities) - sum(y_similarities)
 
 def debias_word_embedding(
     word: str, word_to_embedding: "dict[str, np.array]", gender_subspace: np.array
 ) -> np.array:
-    # TODO: your work here
-    pass
+    word_embedding = word_to_embedding(word)
+    
+    _ , projection = project(word_embedding, gender_subspace[0])
+    
+    debiased_embedding = word_embedding - projection
+    
+    return debiased_embedding
 
 
 def hard_debias(
@@ -626,23 +689,30 @@ def hard_debias(
     gender_attribute_words: "list[str]",
     n_components: int = 1,
 ) -> "dict[str, np.array]":
-    # TODO: your work here
-    pass
-
+    
+    gender_subspace = compute_gender_subspace(word_to_embedding, gender_attribute_words, n_components)
+    
+    debiased_word_to_embedding = {}
+    
+    for word in word_to_embedding:
+        debiased_embedding = debias_word_embedding(word, word_to_embedding, gender_subspace[0])
+        debiased_word_to_embedding[word] = debiased_embedding
+        
+    return debiased_word_to_embedding
 
 if __name__ == "__main__":
     random.seed(2022)
     torch.manual_seed(2022)
 
     # Parameters (you can change them)
-    sample_size = 2500  # Change this if you want to take a subset of data for testing
-    batch_size = 64
+    sample_size = 10000 # Change this if you want to take a subset of data for testing
+    batch_size = 128
     n_epochs = 2
     num_words = 50000
 
     # Load the data
-    data_path = "../input/a1-data"  # Use this for kaggle
-    # data_path = "data"  # Use this if running locally
+    #data_path = "../input/a1-data"  # Use this for kaggle
+    data_path = "data"  # Use this if running locally
 
     # If you use GPUs, use the code below:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -665,7 +735,7 @@ if __name__ == "__main__":
         + valid_raw["premise"]
         + valid_raw["hypothesis"]
     )
-
+    
     # Process into indices
     tokens = tokenize_w2v(full_text)
 
@@ -674,9 +744,10 @@ if __name__ == "__main__":
     index_to_word = {v: k for k, v in word_to_index.items()}
 
     text_indices = tokens_to_ix(tokens, word_to_index)
-
+    
     # Train CBOW
     sources_cb, targets_cb = cbow_preprocessing(text_indices, window_size=2)
+    
     loader_cb = DataLoader(
         Word2VecDataset(sources_cb, targets_cb),
         batch_size=batch_size,
@@ -694,7 +765,13 @@ if __name__ == "__main__":
     # Training Skip-Gram
 
     # TODO: your work here
-    model_sg = "TODO: use SkipGram"
+    model_sg = CBOW(num_words=len(word_to_index), embed_dim=200).to(device)
+    optimizer = torch.optim.Adam(model_sg.parameters())
+    
+    for epoch in range(n_epochs):
+        loss = train_w2v(model_sg, optimizer, loader_cb, device=device).item()
+        print(f"Loss at epoch #{epoch}: {loss:.4f}")
+
 
     # RETRIEVE SIMILAR WORDS
     word = "man"
