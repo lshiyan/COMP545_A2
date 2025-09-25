@@ -502,9 +502,9 @@ def compute_topk_similar(
     
     expanded_word_emb = word_emb.expand_as(w2v_emb_weight)
     similarities = torch.nn.functional.cosine_similarity(expanded_word_emb, w2v_emb_weight, dim = 1)
-    top_k = torch.topk(similarities, k)
+    top_k = torch.topk(similarities, k+1)
     
-    return top_k.indices.tolist()
+    return top_k.indices.tolist()[1:]
 
 @torch.no_grad()
 def retrieve_similar_words(
