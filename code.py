@@ -460,10 +460,9 @@ class SkipGram(nn.Module):
     def forward(self, x: torch.Tensor):
         
         embedding = self.emb(x)
-        projection = self.proj(embedding)
-        softmax_projection = torch.softmax(projection, dim = 1)
-        
-        return softmax_projection
+        projection = self.proj(embedding)    
+            
+        return projection
 
 class CBOW(nn.Module):
     """
@@ -491,9 +490,8 @@ class CBOW(nn.Module):
         embedding = self.emb(x)
         averaged_embedding = torch.mean(embedding, dim=1)
         projection = self.proj(averaged_embedding)
-        softmax_projection = torch.softmax(projection, dim = 1)
         
-        return softmax_projection
+        return projection
 
 
 def compute_topk_similar(
