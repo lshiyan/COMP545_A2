@@ -501,7 +501,7 @@ def compute_topk_similar(
 ) -> list:
     
     cosine_similarity = torch.nn.CosineSimilarity(dim = 1)
-    similarities = cosine_similarity(word_emb.squeeze(0), w2v_emb_weight)
+    similarities = cosine_similarity(word_emb, w2v_emb_weight)
     top_k = torch.topk(similarities, k)
     
     return top_k.indices.tolist()
