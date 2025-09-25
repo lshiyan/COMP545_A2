@@ -541,7 +541,7 @@ def word_analogy(
     tensor_indices = torch.tensor([[word_a_index, word_b_index, word_c_index]])
     embeddings = model.emb(tensor_indices)
     squeezed_embeddings = embeddings.squeeze(0)
-    analogy_embedding = squeezed_embeddings[1] - squeezed_embeddings[0] + squeezed_embeddings[2]
+    analogy_embedding = squeezed_embeddings[0] - squeezed_embeddings[1] + squeezed_embeddings[2]
     topk = compute_topk_similar(analogy_embedding.unsqueeze(0), model.emb.weight, k)
     
     return [index_to_word[ix] for ix in topk]
