@@ -619,9 +619,9 @@ def compute_extreme_words(
     k_extreme = None
     
     if max_:
-        k_extreme = heapq.nlargest(10, heap)
+        k_extreme = heapq.nlargest(k, heap)
     else:
-        k_extreme = heapq.nsmallest(10, heap)
+        k_extreme = heapq.nsmallest(k, heap)
     
     return [ele[1] for ele in k_extreme]
 
