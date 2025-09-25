@@ -549,7 +549,6 @@ def word_analogy(
 
 # ######################## PART 2: YOUR WORK STARTS HERE ########################
 
-
 def compute_gender_subspace(
     word_to_embedding: "dict[str, np.array]",
     gender_attribute_words: "list[tuple[str, str]]",
@@ -681,11 +680,17 @@ def debias_word_embedding(
 
 def hard_debias(
     word_to_embedding: "dict[str, np.array]",
-    gender_attribute_words: "list[str]",
+    gender_attribute_words: "list[list[str]]",
     n_components: int = 1,
 ) -> "dict[str, np.array]":
     
+    print(word_to_embedding)
+    print(gender_attribute_words)
+    print(n_components)
+    
     gender_subspace = compute_gender_subspace(word_to_embedding, gender_attribute_words, n_components)
+    
+    print(gender_subspace)
     
     debiased_word_to_embedding = {}
     
@@ -817,7 +822,7 @@ if __name__ == "__main__":
     # ###################### PART 2: TEST CODE ######################
 
     # Prefilled code showing you how to use the helper functions
-    word_to_embedding = load_glove_embeddings("data/glove/glove.6B.300d.txt")
+    word_to_embedding = load_glove_embeddings("data/glove.6B.300d.txt")
 
     professions = load_professions("data/professions.tsv")
 
@@ -826,12 +831,13 @@ if __name__ == "__main__":
     )
 
     # === Section 2.1 ===
-    gender_subspace = "your work here"
+    gender_subspace = compute_gender_subspace(word_to_embedding, gender_attribute_words, 1)
+    print(gender_subspace)
 
     # === Section 2.2 ===
     a = "your work here"
     b = "your work here"
-    scalar_projection, vector_projection = "your work here"
+   # scalar_projection, vector_projection = "your work here"
 
     # === Section 2.3 ===
     profession_to_embedding = "your work here"
