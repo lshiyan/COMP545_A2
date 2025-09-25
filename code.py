@@ -488,7 +488,7 @@ class CBOW(nn.Module):
     def forward(self, x: torch.Tensor):
         
         embedding = self.emb(x)
-        averaged_embedding = torch.mean(embedding, dim=1)
+        averaged_embedding = torch.sum(embedding, dim=1)
         projection = self.proj(averaged_embedding)
         
         return projection
