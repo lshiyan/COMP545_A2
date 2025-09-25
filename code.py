@@ -361,16 +361,15 @@ def build_current_surrounding_pairs(indices: "list[int]", window_size: int = 2):
 
 def expand_surrounding_words(ix_surroundings: "list[list[int]]", ix_current: "list[int]"):
 
-    window_size = len(ix_surroundings[0])
     ix_surroundings_expanded , ix_current_expanded = [], []
-    
-    for ix in ix_current:
-        for _ in range(window_size):
-            ix_current_expanded.append(ix)
     
     for ix_list in ix_surroundings:
         ix_surroundings_expanded.extend(ix_list)
         
+    for i in range(len(ix_current)):
+        for _ in range(len(ix_surroundings[i])):
+            ix_current_expanded.append(ix_current[i])
+
     return ix_surroundings_expanded, ix_current_expanded
 
 
@@ -625,8 +624,6 @@ def compute_extreme_words(
         k_extreme = heapq.nsmallest(10, heap)
     
     return [ele[1] for ele in k_extreme]
-        
-        
 
 def cosine_similarity(a: np.array, b: np.array) -> float:
     numerator = np.dot(a, b)
@@ -653,7 +650,7 @@ def weat_association(
 ) -> float:
     
     a_similarities = [cosine_similarity(word_to_embedding[w], word_to_embedding[A[i]]) for i in range(len(A))]
-    b_similarities = [cosine_similarity(word_to_embedding[w], word_to_embedding[A[i]]) for i in range(len(B))]
+    b_similarities = [cosine_similarity(word_to_embedding[w], word_to_embedding[B[i]]) for i in range(len(B))]
 
     a_mean = sum(a_similarities) / len(a_similarities)
     b_mean = sum(b_similarities) / len(b_similarities)
@@ -677,7 +674,7 @@ def weat_differential_association(
 def debias_word_embedding(
     word: str, word_to_embedding: "dict[str, np.array]", gender_subspace: np.array
 ) -> np.array:
-    word_embedding = word_to_embedding(word)
+    word_embedding = word_to_embedding[word]
     
     _ , projection = project(word_embedding, gender_subspace[0])
     
