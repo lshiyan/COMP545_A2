@@ -516,8 +516,12 @@ def retrieve_similar_words(
     model.eval()
     word_index = index_map[word]
     tensor_index = torch.tensor(word_index)
-    one_hot = torch.nn.functional.one_hot(tensor_index, len(index_to_word))
+    print(len(index_map))
+    one_hot = torch.nn.functional.one_hot(tensor_index, len(index_map))
     embedding = model(one_hot)
+    
+    print(embedding.shape)
+    print(model.emb.weight.shape)
     topk = compute_topk_similar(embedding.unsqueeze(0), model.emb.weight, k)
     
     return [index_to_word[ix] for ix in topk]
