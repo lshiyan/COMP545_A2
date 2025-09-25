@@ -517,8 +517,9 @@ def retrieve_similar_words(
     
     model.eval()
     word_index = index_map[word]
-    tensor_index = torch.tensor([word_index])
-    embedding = model(tensor_index)
+    tensor_index = torch.tensor(word_index)
+    one_hot = torch.nn.functional.one_hot(tensor_index, len(index_to_word))
+    embedding = model(one_hot)
     topk = compute_topk_similar(embedding.unsqueeze(0), model.emb.weight, k)
     
     return [index_to_word[ix] for ix in topk]
@@ -540,6 +541,7 @@ def word_analogy(
     word_c_index = index_map[word_c]
     
     tensor_indices = torch.tensor([word_a_index, word_b_index, word_c_index])
+    one_hot = torch.nn.functional.one_hot(tensor_indices, len(index_to_word))
     embeddings = model(tensor_indices)
     analogy_embedding = embeddings[1] - embeddings[0] + embeddings[2]
     topk = compute_topk_similar(analogy_embedding.unsqueeze(0), model.emb.weight, k)
