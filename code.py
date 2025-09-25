@@ -822,7 +822,7 @@ if __name__ == "__main__":
     # ###################### PART 2: TEST CODE ######################
 
     # Prefilled code showing you how to use the helper functions
-    word_to_embedding = load_glove_embeddings("data/glove.6B.300d.txt")
+    #word_to_embedding = load_glove_embeddings("data/glove.6B.300d.txt")
 
     professions = load_professions("data/professions.tsv")
 
@@ -831,9 +831,7 @@ if __name__ == "__main__":
     )
 
     # === Section 2.1 ===
-    gender_subspace = compute_gender_subspace(word_to_embedding, gender_attribute_words, 1)
-    print(gender_subspace)
-
+    
     # === Section 2.2 ===
     a = "your work here"
     b = "your work here"
