@@ -689,7 +689,10 @@ def hard_debias(
     debiased_word_to_embedding = {}
     
     for word in word_to_embedding:
-        debiased_embedding = debias_word_embedding(word, word_to_embedding, gender_subspace[0])
+        debiased_embedding = word_to_embedding[word]
+        for component in gender_subspace:
+            temp_dict = {word: debiased_embedding}
+            debiased_embedding = debias_word_embedding(word, temp_dict, component)
         debiased_word_to_embedding[word] = debiased_embedding
         
     return debiased_word_to_embedding
