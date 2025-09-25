@@ -611,7 +611,7 @@ def compute_extreme_words(
     heap = []
     word_embeddings = [word_to_embedding[words[i]] for i in range(len(words))]
     
-    for i, word_embedding in word_embeddings:
+    for i, word_embedding in enumerate(word_embeddings):
         scalar, _ = project(word_embedding, gender_subspace[0])
         
         heapq.heappush(heap, (scalar, words[i]))
