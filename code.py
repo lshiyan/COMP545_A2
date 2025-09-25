@@ -595,7 +595,7 @@ def compute_profession_embeddings(
     for profession in professions:
         split_profession = profession.split(" ")
         embedded_split_profession = np.array([word_to_embedding[w] for w in split_profession])
-        mean_embedding = embedded_split_profession.mean(axis = 1)
+        mean_embedding = embedded_split_profession.mean(axis = 0)
         profession_to_embedding[profession] = mean_embedding
     
     return profession_to_embedding
