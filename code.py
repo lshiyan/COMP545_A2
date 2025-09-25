@@ -360,19 +360,17 @@ def build_current_surrounding_pairs(indices: "list[int]", window_size: int = 2):
 
 
 def expand_surrounding_words(ix_surroundings: "list[list[int]]", ix_current: "list[int]"):
-    print(ix_surroundings)
-    print(ix_current)
+
+    window_size = len(ix_surroundings[0])
     ix_surroundings_expanded , ix_current_expanded = [], []
     
     for ix in ix_current:
-        ix_current_expanded.append(ix)
-        ix_current_expanded.append(ix)
+        for _ in range(window_size):
+            ix_current_expanded.append(ix)
     
     for ix_list in ix_surroundings:
         ix_surroundings_expanded.extend(ix_list)
         
-    print(ix_surroundings_expanded)
-    print(ix_current_expanded)
     return ix_surroundings_expanded, ix_current_expanded
 
 
